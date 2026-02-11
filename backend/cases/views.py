@@ -14,17 +14,29 @@ class CaseViewSet(viewsets.ModelViewSet):
         case = self.get_object()
         vegetables = case.vegetables.all()
         
-        if vegetables.exists():
-            random_vegetable = random.choice(list(vegetables))
-            serializer = VegetableSerializer(random_vegetable)
-            
-            return Response({
-                'success': True,
-                'message': f'🎉 Открыли {case.name}!',
-                'reward': serializer.data
-            })
-        else:
+        if not vegetables.exists():
             return Response({
                 'success': False,
                 'message': 'В кейсе нет овощей'
             }, status=status.HTTP_404_NOT_FOUND)
+        
+        RARITY_WEIGHTS = {
+            'common': 10,      
+            'uncommon': 5,     
+            'rare': 3,         
+            'epic': 2,         
+            'legendary': 1,    
+        }
+        
+        veg_list = list(vegetables)
+        weights = [RARITY_WEIGHTS[veg.rarity] for veg in veg_list]
+        
+        random_vegetable = random.choices(veg_list, weights=weights, k=1)[0]
+        
+        serializer = VegetableSerializer(random_vegetable)
+        
+        return Response({
+            'success': True,
+            'message': f'🎉 Открыли {case.name}!',
+            'reward': serializer.data,
+        })
