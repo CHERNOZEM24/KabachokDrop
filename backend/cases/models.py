@@ -48,3 +48,24 @@ def create_user_profile(sender, instance, created, **kwargs):
 @receiver(post_save, sender=User)
 def save_user_profile(sender, instance, **kwargs):
     instance.profile.save()
+
+class Inventory(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='inventory')
+    vegetable = models.ForeignKey(Vegetable, on_delete=models.CASCADE)
+    quantity = models.IntegerField(default=1, verbose_name="Количество")
+    acquired_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ['user', 'vegetable']  
+
+    def __str__(self):
+        return f"{self.user.username} - {self.vegetable.name} x{self.quantity}"
+
+@receiver(post_save, sender=User)
+def create_user_profile(sender, instance, created, **kwargs):
+    if created:
+        Profile.objects.create(user=instance)
+
+@receiver(post_save, sender=User)
+def save_user_profile(sender, instance, **kwargs):
+    instance.profile.save()

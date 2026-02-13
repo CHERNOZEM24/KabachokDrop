@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Case, Vegetable, Profile
+from .models import Case, Vegetable, Profile, Inventory
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.contrib.auth.models import User
 
@@ -50,3 +50,10 @@ class CaseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Case
         fields = ['id', 'name', 'description', 'price', 'image_url', 'vegetables', 'is_active']
+
+class InventorySerializer(serializers.ModelSerializer):
+    vegetable = VegetableSerializer(read_only=True)
+    
+    class Meta:
+        model = Inventory
+        fields = ['id', 'vegetable', 'quantity', 'acquired_at']

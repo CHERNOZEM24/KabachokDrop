@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { casesAPI, profileAPI, authAPI } from './services/api'
+import { casesAPI, profileAPI, authAPI, inventoryAPI } from './services/api' 
 import './App.css'
 
 function App() {
@@ -11,6 +11,8 @@ function App() {
   const [user, setUser] = useState(null)
   const [balance, setBalance] = useState(0)
   const [isLogin, setIsLogin] = useState(true)
+  const [inventory, setInventory] = useState([])
+  const [loadingInventory, setLoadingInventory] = useState(false)
   const [formData, setFormData] = useState({
     username: '',
     email: '',
@@ -19,41 +21,32 @@ function App() {
   const [error, setError] = useState('')
   const [authLoading, setAuthLoading] = useState(false)
   const [customAmount, setCustomAmount] = useState('')
+  const [activeTab, setActiveTab] = useState('menu')
+  const [spinning, setSpinning] = useState(false)
+  const [spinItems, setSpinItems] = useState([])
 
   useEffect(() => {
-  const token = localStorage.getItem('access_token')
-  console.log('Токен при загрузке:', token)
-  
-  const initAuth = async () => {
-    if (token) {
-      try {
-        console.log('Пробуем получить пользователя...')
-        const userResponse = await authAPI.getMe()
-        console.log('Ответ от сервера:', userResponse)
-        
-        const userData = userResponse.data
-        console.log('Данные пользователя:', userData)
-        
-        setUser(userData)
-        setBalance(userData.profile?.balance || 0)
-        console.log('Баланс установлен:', userData.profile?.balance)
-      } catch (error) {
-        console.error('Детали ошибки:', {
-          status: error.response?.status,
-          data: error.response?.data,
-          message: error.message
-        })
-        localStorage.removeItem('access_token')
-        localStorage.removeItem('refresh_token')
+    const token = localStorage.getItem('access_token')
+    
+    const initAuth = async () => {
+      if (token) {
+        try {
+          const userResponse = await authAPI.getMe()
+          const userData = userResponse.data
+          setUser(userData)
+          setBalance(userData.profile?.balance || 0)
+        } catch (error) {
+          console.error('Ошибка загрузки пользователя:', error)
+          localStorage.removeItem('access_token')
+          localStorage.removeItem('refresh_token')
+        }
       }
-    } else {
-      console.log('Нет токена')
+      loadCases()
     }
-    loadCases()
-  }
-  
-  initAuth()
-}, [])
+    
+    initAuth()
+  }, [])
+
   const loadCases = async () => {
     try {
       const response = await casesAPI.getCases()
@@ -65,41 +58,110 @@ function App() {
     }
   }
 
-  const handleOpenCase = async (caseId, price) => {
-    if (!user) {
-      setResult({
-        success: false,
-        message: 'Войдите, чтобы открывать кейсы'
-      })
-      setIsProfileOpen(true)
-      return
-    }
-
-    if (balance < price) {
-      setResult({
-        success: false,
-        message: 'Недостаточно средств на счете'
-      })
-      return
-    }
-
-    setOpening(true)
-    setResult(null)
-    
+  const loadInventory = async () => {
+    setLoadingInventory(true)
     try {
-      const response = await casesAPI.openCase(caseId)
-      setResult(response.data)
+      const response = await inventoryAPI.getInventory()
+      setInventory(response.data)
+    } catch (error) {
+      console.error('Ошибка загрузки инвентаря:', error)
+    } finally {
+      setLoadingInventory(false)
+    }
+  }
+
+  const handleSell = async (itemId) => {
+    try {
+      const response = await inventoryAPI.sellItem(itemId)
       setBalance(response.data.new_balance)
-      
+      await loadInventory()
+      setResult({
+        success: true,
+        message: response.data.message
+      })
+      setTimeout(() => setResult(null), 3000)
     } catch (error) {
       setResult({
         success: false,
-        message: error.response?.data?.message || 'Ошибка при открытии кейса'
+        message: error.response?.data?.message || 'Ошибка при продаже'
       })
-    } finally {
-      setOpening(false)
+      setTimeout(() => setResult(null), 3000)
     }
   }
+
+  const handleOpenCase = async (caseId, price) => {
+  if (!user) {
+    setResult({
+      success: false,
+      message: 'Войдите, чтобы открывать кейсы'
+    })
+    setIsProfileOpen(true)
+    return
+  }
+
+  if (balance < price) {
+    setResult({
+      success: false,
+      message: 'Недостаточно средств на счете'
+    })
+    return
+  }
+
+  setOpening(true)
+  setResult(null)
+  
+  try {
+    const currentCase = cases.find(c => c.id === caseId)
+    const allVeggies = currentCase.vegetables
+    const response = await casesAPI.openCase(caseId)
+    const realReward = response.data.reward
+    
+    const spinArray = []
+    
+    for (let i = 0; i < 30; i++) {
+      const randomVeg = allVeggies[Math.floor(Math.random() * allVeggies.length)]
+      spinArray.push(randomVeg)
+    }
+    
+    spinArray.push(realReward)
+    
+    for (let i = 0; i < 20; i++) {
+      const randomVeg = allVeggies[Math.floor(Math.random() * allVeggies.length)]
+      spinArray.push(randomVeg)
+    }
+    
+    setSpinItems(spinArray)
+    setSpinning(true)
+    
+    setTimeout(() => {
+  const track = document.querySelector('.spin-track')
+  
+  if (track) {
+    const itemWidth = 105
+    const winIndex = 30
+    const targetPosition = -(winIndex * itemWidth) + 200
+    
+    track.style.transition = 'transform 3s cubic-bezier(0.2, 0.9, 0.3, 1)'
+    track.style.transform = `translateX(${targetPosition}px)`
+  }
+  
+    setTimeout(() => {
+      setSpinning(false)
+      setResult(response.data)
+      setBalance(response.data.new_balance)
+    }, 3000)
+  }, 100)
+    
+  } catch (error) {
+    setResult({
+      success: false,
+      message: error.response?.data?.message || 'Ошибка при открытии кейса'
+    })
+    setSpinning(false)
+  } finally {
+    setOpening(false)
+  }
+}
 
   const handleDeposit = async (amount) => {
     if (!amount || amount <= 0 || amount > 5000) {
@@ -110,6 +172,7 @@ function App() {
       const response = await profileAPI.deposit(amount)
       setBalance(response.data.new_balance)
       setCustomAmount('')
+      setActiveTab('menu')
     } catch (error) {
       console.log('Ошибка пополнения:', error)
     }
@@ -121,6 +184,9 @@ function App() {
 
   const toggleProfilePanel = () => {
     setIsProfileOpen(!isProfileOpen)
+    if (!isProfileOpen) {
+      setActiveTab('menu')
+    }
   }
 
   const handleLogout = () => {
@@ -129,6 +195,8 @@ function App() {
     setUser(null)
     setBalance(0)
     setIsProfileOpen(false)
+    setActiveTab('menu')
+    setInventory([])
   }
 
   const handleChange = (e) => {
@@ -206,14 +274,10 @@ function App() {
       {result && <div className="result-overlay" onClick={closeResult} />}
       {result && (
         <div className={`result ${result.success ? 'success' : 'error'}`}>
-          <button className="close-button" onClick={closeResult}>
-            ×
-          </button>
-          
+          <button className="close-button" onClick={closeResult}>×</button>
           <div className="result-content">
             <div className="result-emoji">{result.success ? '🎉' : '❌'}</div>
             <h3>{result.message}</h3>
-            
             {result.reward && (
               <div className="reward">
                 <div className="reward-emoji">{result.reward.emoji}</div>
@@ -230,49 +294,117 @@ function App() {
         </div>
       )}
 
+      {spinning && (
+        <div className="spin-modal">
+          <div className="spin-window">
+            <h3>Открытие кейса</h3>
+            <div className="spin-viewport">
+              <div className="spin-marker">▼</div>
+              <div className="spin-track">
+                {spinItems.map((item, index) => (
+                  <div key={index} className="spin-item">
+                    <span className="spin-emoji">{item.emoji}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {isProfileOpen && (
         <div className="profile-panel">
           {user ? (
             <>
-              <div className="user-info">
+              <div className="profile-header">
                 <div className="user-avatar">🥒</div>
-                <div className="user-details">
+                <div className="user-info">
                   <div className="user-name">{user.username}</div>
                   <div className="user-email">{user.email}</div>
                 </div>
+                {activeTab !== 'menu' && (
+                  <button className="back-button" onClick={() => setActiveTab('menu')}>←</button>
+                )}
               </div>
 
-              <div className="deposit-section">
-                <h3>Пополнить кошелек</h3>
-                
-                <div className="deposit-presets">
-                  <button className="deposit-btn" onClick={() => handleDeposit(50)}>50</button>
-                  <button className="deposit-btn" onClick={() => handleDeposit(250)}>250</button>
-                  <button className="deposit-btn" onClick={() => handleDeposit(500)}>500</button>
-                </div>
-                
-                <div className="deposit-custom">
-                  <input
-                    type="number"
-                    placeholder="Своя сумма (до 5000)"
-                    value={customAmount}
-                    onChange={(e) => setCustomAmount(e.target.value)}
-                    min="1"
-                    max="5000"
-                  />
-                  <button 
-                    className="deposit-btn custom"
-                    onClick={() => handleDeposit(parseInt(customAmount))}
-                    disabled={!customAmount || parseInt(customAmount) <= 0 || parseInt(customAmount) > 5000}
-                  >
-                    Пополнить
+              {activeTab === 'menu' && (
+                <div className="profile-menu">
+                  <button className="profile-menu-btn" onClick={() => setActiveTab('deposit')}>
+                    <span>💰</span> Пополнение
+                  </button>
+                  <button className="profile-menu-btn" onClick={async () => {
+                    setActiveTab('inventory')
+                    await loadInventory()
+                  }}>
+                    <span>📦</span> Инвентарь
                   </button>
                 </div>
-              </div>
+              )}
 
-              <button className="logout-button" onClick={handleLogout}>
-                Выйти
-              </button>
+              {activeTab === 'deposit' && (
+                <div className="deposit-section">
+                  <h3>Пополнить кошелек</h3>
+                  <div className="deposit-presets">
+                    <button className="deposit-btn" onClick={() => handleDeposit(50)}>50</button>
+                    <button className="deposit-btn" onClick={() => handleDeposit(250)}>250</button>
+                    <button className="deposit-btn" onClick={() => handleDeposit(500)}>500</button>
+                  </div>
+                  <div className="deposit-custom">
+                    <input
+                      type="number"
+                      placeholder="Своя сумма (до 5000)"
+                      value={customAmount}
+                      onChange={(e) => setCustomAmount(e.target.value)}
+                      min="1"
+                      max="5000"
+                    />
+                    <button 
+                      className="deposit-btn custom"
+                      onClick={() => handleDeposit(parseInt(customAmount))}
+                      disabled={!customAmount || parseInt(customAmount) <= 0 || parseInt(customAmount) > 5000}
+                    >
+                      Пополнить
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'inventory' && (
+                <div className="inventory-section">
+                  {loadingInventory ? (
+                    <div className="inventory-loading">Загрузка...</div>
+                  ) : inventory.length === 0 ? (
+                    <div className="inventory-empty">
+                      <span className="empty-emoji">📦</span>
+                      <p>Инвентарь пуст</p>
+                      <p className="empty-hint">Открывайте кейсы, чтобы получить овощи</p>
+                    </div>
+                  ) : (
+                    <div className="inventory-list">
+                      {inventory.map(item => (
+                        <div key={item.id} className="inventory-item">
+                          <div className="item-emoji">{item.vegetable.emoji}</div>
+                          <div className="item-info">
+                            <div className="item-name">{item.vegetable.name}</div>
+                            <span className={`rarity-mini ${item.vegetable.rarity}`}>
+                              {item.vegetable.rarity_display}
+                            </span>
+                            <div className="item-quantity">x{item.quantity}</div>
+                          </div>
+                          <div className="item-price">
+                            <div className="price-value">{item.vegetable.price} 💰</div>
+                            <button className="sell-button" onClick={() => handleSell(item.id)}>
+                              Продать
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <button className="logout-button" onClick={handleLogout}>Выйти</button>
             </>
           ) : (
             <div className="auth-container">
@@ -308,11 +440,7 @@ function App() {
                 <button type="submit" disabled={authLoading}>
                   {authLoading ? 'Загрузка...' : isLogin ? 'Войти' : 'Зарегистрироваться'}
                 </button>
-                <button 
-                  type="button" 
-                  className="auth-toggle"
-                  onClick={() => setIsLogin(!isLogin)}
-                >
+                <button type="button" className="auth-toggle" onClick={() => setIsLogin(!isLogin)}>
                   {isLogin ? 'Нет аккаунта? Зарегистрироваться' : 'Уже есть аккаунт? Войти'}
                 </button>
               </form>
@@ -331,20 +459,17 @@ function App() {
                 <div className="case-emoji">🎁</div>
               )}
             </div>
-            
             <div className="case-info">
               <h3>{caseItem.name}</h3>
               {caseItem.description && (
                 <p className="case-description">{caseItem.description}</p>
               )}
-              
               <div className="case-stats">
                 <div className="price">💰 {caseItem.price} монет</div>
                 <div className="vegetable-count">
                   🥕 {caseItem.vegetables?.length || 0} овощей
                 </div>
               </div>
-
               <button
                 onClick={() => handleOpenCase(caseItem.id, caseItem.price)}
                 disabled={opening || (user && balance < caseItem.price)}

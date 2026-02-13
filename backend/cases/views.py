@@ -5,8 +5,9 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework_simplejwt.views import TokenObtainPairView
 import random
 from django.contrib.auth.models import User
-from .models import Case, Vegetable, Profile
-from .serializers import CaseSerializer, VegetableSerializer, UserSerializer, RegisterSerializer, CustomTokenObtainPairSerializer, ProfileSerializer
+from django.db import transaction
+from .models import Case, Vegetable, Profile, Inventory
+from .serializers import CaseSerializer, VegetableSerializer, UserSerializer, RegisterSerializer, CustomTokenObtainPairSerializer, ProfileSerializer, InventorySerializer
 
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
@@ -68,6 +69,47 @@ class ProfileViewSet(viewsets.GenericViewSet):
             'new_balance': profile.balance
         })
 
+class InventoryViewSet(viewsets.GenericViewSet):
+    permission_classes = (IsAuthenticated,)
+    serializer_class = InventorySerializer
+    
+    def get_queryset(self):
+        return Inventory.objects.filter(user=self.request.user).order_by('-acquired_at')
+    
+    def list(self, request):
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=True, methods=['post'])
+    def sell(self, request, pk=None):
+        try:
+            inventory_item = Inventory.objects.get(id=pk, user=request.user)
+        except Inventory.DoesNotExist:
+            return Response({
+                'success': False,
+                'message': 'Овощ не найден в инвентаре'
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        price = inventory_item.vegetable.price
+        profile = request.user.profile
+        profile.balance += price
+        profile.save()
+        
+        if inventory_item.quantity > 1:
+            inventory_item.quantity -= 1
+            inventory_item.save()
+            message = f'Продан {inventory_item.vegetable.name} за {price} монет. Осталось: {inventory_item.quantity}'
+        else:
+            inventory_item.delete()
+            message = f'Продан {inventory_item.vegetable.name} за {price} монет'
+        
+        return Response({
+            'success': True,
+            'message': message,
+            'new_balance': profile.balance
+        })
+
 class CaseViewSet(viewsets.ModelViewSet):
     queryset = Case.objects.filter(is_active=True)
     serializer_class = CaseSerializer
@@ -105,8 +147,19 @@ class CaseViewSet(viewsets.ModelViewSet):
         
         random_vegetable = random.choices(veg_list, weights=weights, k=1)[0]
         
-        user.profile.balance -= case.price
-        user.profile.save()
+        with transaction.atomic():
+            user.profile.balance -= case.price
+            user.profile.save()
+            
+            inventory_item, created = Inventory.objects.get_or_create(
+                user=user,
+                vegetable=random_vegetable,
+                defaults={'quantity': 1}
+            )
+            
+            if not created:
+                inventory_item.quantity += 1
+                inventory_item.save()
         
         serializer = VegetableSerializer(random_vegetable)
         

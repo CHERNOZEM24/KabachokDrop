@@ -60,4 +60,9 @@ export const casesAPI = {
   openCase: (id) => api.post(`/cases/${id}/open/`),
 }
 
+export const inventoryAPI = {
+  getInventory: () => api.get('/inventory/'),
+  sellItem: (id) => api.post(`/inventory/${id}/sell/`),
+}
+
 export default api
