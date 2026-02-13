@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Case, Vegetable
+from .models import Case, Vegetable, Profile
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.contrib.auth.models import User
 
@@ -43,3 +43,8 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         token = super().get_token(user)
         token['username'] = user.username
         return token
+
+class ProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Profile
+        fields = ['balance', 'created_at']

@@ -473,3 +473,99 @@ body {
   background: #f44336;
   color: white;
 }
+
+.balance-display {
+  color: white;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 8px 20px;
+  border-radius: 50px;
+  font-weight: bold;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  font-size: 1.1rem;
+}
+
+.user-balance {
+  margin-top: 8px;
+  color: #4CAF50;
+  font-weight: bold;
+  font-size: 1rem;
+}
+
+.deposit-section {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #eee;
+}
+
+.deposit-section h3 {
+  font-size: 1.1rem;
+  margin-bottom: 15px;
+  color: #333;
+}
+
+.deposit-presets {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.deposit-btn {
+  flex: 1;
+  padding: 12px;
+  background: linear-gradient(45deg, #4CAF50, #2E7D32);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.deposit-btn:hover {
+  transform: scale(1.02);
+  background: linear-gradient(45deg, #388E3C, #1B5E20);
+}
+
+.deposit-btn.custom {
+  background: linear-gradient(45deg, #2196F3, #1565C0);
+}
+
+.deposit-btn.custom:hover {
+  background: linear-gradient(45deg, #1976D2, #0D47A1);
+}
+
+.deposit-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.deposit-custom {
+  display: flex;
+  gap: 10px;
+}
+
+.deposit-custom input {
+  flex: 2;
+  padding: 12px;
+  border: 2px solid #ddd;
+  border-radius: 10px;
+  font-size: 1rem;
+  transition: border-color 0.3s;
+}
+
+.deposit-custom input:focus {
+  outline: none;
+  border-color: #4CAF50;
+}
+
+.deposit-custom input::-webkit-inner-spin-button,
+.deposit-custom input::-webkit-outer-spin-button {
+  opacity: 0.5;
+  height: 20px;
+}
+
+.deposit-custom .deposit-btn {
+  flex: 1;
+}

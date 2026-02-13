@@ -49,6 +49,11 @@ export const authAPI = {
   getMe: () => api.get('/auth/me/'),
 }
 
+export const profileAPI = {
+  getProfile: () => api.get('/profile/'),
+  deposit: (amount) => api.post('/profile/deposit/', { amount }),
+}
+
 export const casesAPI = {
   getCases: () => api.get('/cases/'),
   getCaseById: (id) => api.get(`/cases/${id}/`),

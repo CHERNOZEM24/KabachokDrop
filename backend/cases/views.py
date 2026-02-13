@@ -1,12 +1,12 @@
-from django.contrib.auth.models import User
 from rest_framework import viewsets, status, generics
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework_simplejwt.views import TokenObtainPairView
 import random
-from .models import Case, Vegetable
-from .serializers import CaseSerializer, VegetableSerializer, UserSerializer, RegisterSerializer, CustomTokenObtainPairSerializer
+from django.contrib.auth.models import User
+from .models import Case, Vegetable, Profile
+from .serializers import CaseSerializer, VegetableSerializer, UserSerializer, RegisterSerializer, CustomTokenObtainPairSerializer, ProfileSerializer
 
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
@@ -23,13 +23,67 @@ class UserDetailView(generics.RetrieveAPIView):
     def get_object(self):
         return self.request.user
 
+class ProfileViewSet(viewsets.GenericViewSet):
+    permission_classes = (IsAuthenticated,)
+    serializer_class = ProfileSerializer
+    
+    def get_object(self):
+        return self.request.user.profile
+    
+    def list(self, request):
+        serializer = self.get_serializer(self.get_object())
+        return Response(serializer.data)
+    
+    @action(detail=False, methods=['post'])
+    def deposit(self, request):
+        profile = self.get_object()
+        amount = request.data.get('amount')
+        
+        try:
+            amount = int(amount)
+            if amount <= 0:
+                return Response({
+                    'success': False,
+                    'message': 'Сумма должна быть положительной'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            if amount > 5000:
+                return Response({
+                    'success': False,
+                    'message': 'Максимальная сумма пополнения - 5000 монет'
+                }, status=status.HTTP_400_BAD_REQUEST)
+                
+        except (TypeError, ValueError):
+            return Response({
+                'success': False,
+                'message': 'Введите корректную сумму'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        profile.balance += amount
+        profile.save()
+        
+        return Response({
+            'success': True,
+            'message': f'Счет пополнен на {amount} монет',
+            'new_balance': profile.balance
+        })
+
 class CaseViewSet(viewsets.ModelViewSet):
     queryset = Case.objects.filter(is_active=True)
     serializer_class = CaseSerializer
+    permission_classes = (IsAuthenticated,)
     
     @action(detail=True, methods=['post'])
     def open(self, request, pk=None):
         case = self.get_object()
+        user = request.user
+        
+        if user.profile.balance < case.price:
+            return Response({
+                'success': False,
+                'message': 'Недостаточно средств на счете'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
         vegetables = case.vegetables.all()
         
         if not vegetables.exists():
@@ -39,11 +93,11 @@ class CaseViewSet(viewsets.ModelViewSet):
             }, status=status.HTTP_404_NOT_FOUND)
         
         RARITY_WEIGHTS = {
-            'common': 10,      
-            'uncommon': 5,     
-            'rare': 3,         
-            'epic': 2,         
-            'legendary': 1,    
+            'common': 10,
+            'uncommon': 5,
+            'rare': 3,
+            'epic': 2,
+            'legendary': 1,
         }
         
         veg_list = list(vegetables)
@@ -51,10 +105,14 @@ class CaseViewSet(viewsets.ModelViewSet):
         
         random_vegetable = random.choices(veg_list, weights=weights, k=1)[0]
         
+        user.profile.balance -= case.price
+        user.profile.save()
+        
         serializer = VegetableSerializer(random_vegetable)
         
         return Response({
             'success': True,
             'message': f'🎉 Открыли {case.name}!',
             'reward': serializer.data,
+            'new_balance': user.profile.balance
         })
