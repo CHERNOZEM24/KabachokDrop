@@ -21,16 +21,39 @@ function App() {
   const [customAmount, setCustomAmount] = useState('')
 
   useEffect(() => {
-    const token = localStorage.getItem('access_token')
-    const savedUser = localStorage.getItem('user')
-    if (token && savedUser) {
-      const userData = JSON.parse(savedUser)
-      setUser(userData)
-      setBalance(userData.profile?.balance || 0)
+  const token = localStorage.getItem('access_token')
+  console.log('Токен при загрузке:', token)
+  
+  const initAuth = async () => {
+    if (token) {
+      try {
+        console.log('Пробуем получить пользователя...')
+        const userResponse = await authAPI.getMe()
+        console.log('Ответ от сервера:', userResponse)
+        
+        const userData = userResponse.data
+        console.log('Данные пользователя:', userData)
+        
+        setUser(userData)
+        setBalance(userData.profile?.balance || 0)
+        console.log('Баланс установлен:', userData.profile?.balance)
+      } catch (error) {
+        console.error('Детали ошибки:', {
+          status: error.response?.status,
+          data: error.response?.data,
+          message: error.message
+        })
+        localStorage.removeItem('access_token')
+        localStorage.removeItem('refresh_token')
+      }
+    } else {
+      console.log('Нет токена')
     }
     loadCases()
-  }, [])
-
+  }
+  
+  initAuth()
+}, [])
   const loadCases = async () => {
     try {
       const response = await casesAPI.getCases()
@@ -68,9 +91,6 @@ function App() {
       setResult(response.data)
       setBalance(response.data.new_balance)
       
-      setTimeout(() => {
-        setResult(null)
-      }, 5000)
     } catch (error) {
       setResult({
         success: false,
@@ -82,42 +102,16 @@ function App() {
   }
 
   const handleDeposit = async (amount) => {
-    if (!amount || amount <= 0) {
-      setResult({
-        success: false,
-        message: 'Введите корректную сумму'
-      })
-      return
-    }
-
-    if (amount > 5000) {
-      setResult({
-        success: false,
-        message: 'Максимальная сумма пополнения - 5000 монет'
-      })
+    if (!amount || amount <= 0 || amount > 5000) {
       return
     }
 
     try {
       const response = await profileAPI.deposit(amount)
       setBalance(response.data.new_balance)
-      
-      const savedUser = JSON.parse(localStorage.getItem('user'))
-      savedUser.profile.balance = response.data.new_balance
-      localStorage.setItem('user', JSON.stringify(savedUser))
-      setUser(savedUser)
-      
-      setResult({
-        success: true,
-        message: response.data.message
-      })
-      
       setCustomAmount('')
     } catch (error) {
-      setResult({
-        success: false,
-        message: error.response?.data?.message || 'Ошибка пополнения'
-      })
+      console.log('Ошибка пополнения:', error)
     }
   }
 
@@ -132,7 +126,6 @@ function App() {
   const handleLogout = () => {
     localStorage.removeItem('access_token')
     localStorage.removeItem('refresh_token')
-    localStorage.removeItem('user')
     setUser(null)
     setBalance(0)
     setIsProfileOpen(false)
@@ -162,7 +155,6 @@ function App() {
         
         const userResponse = await authAPI.getMe()
         const userData = userResponse.data
-        localStorage.setItem('user', JSON.stringify(userData))
         setUser(userData)
         setBalance(userData.profile?.balance || 0)
         setIsProfileOpen(false)
@@ -211,6 +203,33 @@ function App() {
         </div>
       </div>
 
+      {result && <div className="result-overlay" onClick={closeResult} />}
+      {result && (
+        <div className={`result ${result.success ? 'success' : 'error'}`}>
+          <button className="close-button" onClick={closeResult}>
+            ×
+          </button>
+          
+          <div className="result-content">
+            <div className="result-emoji">{result.success ? '🎉' : '❌'}</div>
+            <h3>{result.message}</h3>
+            
+            {result.reward && (
+              <div className="reward">
+                <div className="reward-emoji">{result.reward.emoji}</div>
+                <div className="reward-info">
+                  <h4>{result.reward.name}</h4>
+                  <span className={`rarity ${result.reward.rarity}`}>
+                    {result.reward.rarity_display}
+                  </span>
+                  <p className="reward-price">💰 {result.reward.price} монет</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {isProfileOpen && (
         <div className="profile-panel">
           {user ? (
@@ -220,7 +239,6 @@ function App() {
                 <div className="user-details">
                   <div className="user-name">{user.username}</div>
                   <div className="user-email">{user.email}</div>
-                  <div className="user-balance">💰 Баланс: {balance} монет</div>
                 </div>
               </div>
 
@@ -300,34 +318,6 @@ function App() {
               </form>
             </div>
           )}
-        </div>
-      )}
-
-      {result && <div className="result-overlay" onClick={closeResult} />}
-
-      {result && (
-        <div className={`result ${result.success ? 'success' : 'error'}`}>
-          <button className="close-button" onClick={closeResult}>
-            ×
-          </button>
-          
-          <div className="result-content">
-            <div className="result-emoji">{result.success ? '🎉' : '❌'}</div>
-            <h3>{result.message}</h3>
-            
-            {result.reward && (
-              <div className="reward">
-                <div className="reward-emoji">{result.reward.emoji}</div>
-                <div className="reward-info">
-                  <h4>{result.reward.name}</h4>
-                  <span className={`rarity ${result.reward.rarity}`}>
-                    {result.reward.rarity_display}
-                  </span>
-                  <p className="reward-price">💰 {result.reward.price} монет</p>
-                </div>
-              </div>
-            )}
-          </div>
         </div>
       )}
 

@@ -10,17 +10,17 @@ class VegetableSerializer(serializers.ModelSerializer):
         model = Vegetable
         fields = ['id', 'name', 'emoji', 'rarity', 'rarity_display', 'description', 'price']
 
-class CaseSerializer(serializers.ModelSerializer):
-    vegetables = VegetableSerializer(many=True, read_only=True)
-    
+class ProfileSerializer(serializers.ModelSerializer):  
     class Meta:
-        model = Case
-        fields = ['id', 'name', 'description', 'price', 'image_url', 'vegetables', 'is_active']
+        model = Profile
+        fields = ['balance', 'created_at']
 
 class UserSerializer(serializers.ModelSerializer):
+    profile = ProfileSerializer(read_only=True)  
+
     class Meta:
         model = User
-        fields = ('id', 'username', 'email', 'first_name', 'last_name')
+        fields = ('id', 'username', 'email', 'first_name', 'last_name', 'profile')
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
@@ -44,7 +44,9 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         token['username'] = user.username
         return token
 
-class ProfileSerializer(serializers.ModelSerializer):
+class CaseSerializer(serializers.ModelSerializer):
+    vegetables = VegetableSerializer(many=True, read_only=True)
+    
     class Meta:
-        model = Profile
-        fields = ['balance', 'created_at']
+        model = Case
+        fields = ['id', 'name', 'description', 'price', 'image_url', 'vegetables', 'is_active']
