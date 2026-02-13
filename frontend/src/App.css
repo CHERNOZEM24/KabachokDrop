@@ -12,21 +12,43 @@ body {
 }
 
 .app {
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
-  padding: 11px;
+  padding: 10px;
+  position: relative;
 }
 
 .header {
-  text-align: center;
-  margin-bottom: 50px;
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  margin-bottom: 0;
   color: white;
+  z-index: 100;
+  text-align: left;
 }
 
 .header h1 {
-  font-size: 3.5rem;
-  margin-bottom: 5px;
+  font-size: 2rem;
+  margin-bottom: 0;
   text-shadow: 3px 3px 6px rgba(0,0,0,0.4);
+}
+
+.cases-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  width: 100%;
+}
+
+.cases-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
 }
 
 .loading {
@@ -44,13 +66,6 @@ body {
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
-}
-
-.cases-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 25px;
-  margin-bottom: 1020px;
 }
 
 .case-card {
@@ -279,4 +294,182 @@ body {
   color: #FF9800;
   font-weight: bold;
   margin-top: 5px;
+}
+
+.navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 30px;
+  z-index: 1000;
+}
+
+.nav-logo {
+  color: white;
+  font-size: 2rem;
+  font-weight: bold;
+  text-shadow: 3px 3px 6px rgba(0,0,0,0.4);
+}
+
+.profile-button {
+  background: rgba(255, 255, 255, 0.2);
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  border-radius: 50px;
+  padding: 10px 25px;
+  color: white;
+  font-size: 1.1rem;
+  font-weight: bold;
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+  transition: all 0.3s;
+}
+
+.profile-button:hover {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: white;
+  transform: scale(1.05);
+}
+
+.profile-panel {
+  position: fixed;
+  top: 80px;
+  right: 30px;
+  width: 250px;
+  background: white;
+  border-radius: 15px;
+  padding: 20px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+  z-index: 999;
+  font-size: 1.1rem;
+  color: #333;
+}
+
+.cases-grid {
+  margin-top: 80px;
+}
+
+.header {
+  display: none;
+}
+
+.auth-container {
+  padding: 10px;
+}
+
+.auth-container h2 {
+  margin-bottom: 20px;
+  color: #333;
+  font-size: 1.3rem;
+}
+
+.auth-container input {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 15px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 0.95rem;
+}
+
+.auth-container button {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 10px;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.auth-container button[type="submit"] {
+  background: linear-gradient(45deg, #4CAF50, #2E7D32);
+  color: white;
+  font-weight: bold;
+}
+
+.auth-container button[type="submit"]:hover {
+  transform: scale(1.02);
+}
+
+.auth-container button[type="submit"]:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.auth-toggle {
+  background: none;
+  color: #666;
+  text-decoration: underline;
+}
+
+.auth-toggle:hover {
+  color: #4CAF50;
+  background: none;
+}
+
+.auth-error {
+  background: #ffebee;
+  color: #c62828;
+  padding: 10px;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  font-size: 0.9rem;
+  border: 1px solid #ef9a9a;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.user-avatar {
+  font-size: 2.5rem;
+  background: linear-gradient(45deg, #4CAF50, #2E7D32);
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.user-details {
+  flex: 1;
+}
+
+.user-name {
+  font-weight: bold;
+  color: #333;
+  font-size: 1.1rem;
+}
+
+.user-email {
+  color: #666;
+  font-size: 0.85rem;
+  margin-top: 4px;
+}
+
+.logout-button {
+  width: 100%;
+  padding: 12px;
+  background: none;
+  border: 2px solid #f44336;
+  border-radius: 8px;
+  color: #f44336;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.logout-button:hover {
+  background: #f44336;
+  color: white;
 }

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { casesAPI } from './services/api'
+import Auth from './components/auth'
 import './App.css'
 
 function App() {
@@ -7,8 +8,15 @@ function App() {
   const [loading, setLoading] = useState(true)
   const [result, setResult] = useState(null)
   const [opening, setOpening] = useState(false)
+  const [isProfileOpen, setIsProfileOpen] = useState(false)
+  const [user, setUser] = useState(null)
 
   useEffect(() => {
+    const token = localStorage.getItem('access_token')
+    const savedUser = localStorage.getItem('user')
+    if (token && savedUser) {
+      setUser(JSON.parse(savedUser))
+    }
     loadCases()
   }, [])
 
@@ -48,6 +56,23 @@ function App() {
     setResult(null)
   }
 
+  const toggleProfilePanel = () => {
+    setIsProfileOpen(!isProfileOpen)
+  }
+
+  const handleLogout = () => {
+    localStorage.removeItem('access_token')
+    localStorage.removeItem('refresh_token')
+    localStorage.removeItem('user')
+    setUser(null)
+    setIsProfileOpen(false)
+  }
+
+  const handleAuthSuccess = (userData) => {
+    setUser(userData)
+    setIsProfileOpen(false)
+  }
+
   if (loading) {
     return (
       <div className="loading">
@@ -59,9 +84,33 @@ function App() {
 
   return (
     <div className="app">
-      <header className="header">
-        <h1>KabachokDrop</h1>
-      </header>
+      <div className="navbar">
+        <div className="nav-logo">KabachokDrop</div>
+        <button className="profile-button" onClick={toggleProfilePanel}>
+          {user ? `${user.username}` : 'Войти'}
+        </button>
+      </div>
+
+      {isProfileOpen && (
+        <div className="profile-panel">
+          {user ? (
+            <>
+              <div className="user-info">
+                <div className="user-avatar">🥒</div>
+                <div className="user-details">
+                  <div className="user-name">{user.username}</div>
+                  <div className="user-email">{user.email}</div>
+                </div>
+              </div>
+              <button className="logout-button" onClick={handleLogout}>
+                Выйти
+              </button>
+            </>
+          ) : (
+            <Auth onAuthSuccess={handleAuthSuccess} />
+          )}
+        </div>
+      )}
 
       {result && <div className="result-overlay" onClick={closeResult} />}
 
