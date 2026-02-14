@@ -113,7 +113,7 @@ class InventoryViewSet(viewsets.GenericViewSet):
 class CaseViewSet(viewsets.ModelViewSet):
     queryset = Case.objects.filter(is_active=True)
     serializer_class = CaseSerializer
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (AllowAny,)
     
     @action(detail=True, methods=['post'])
     def open(self, request, pk=None):

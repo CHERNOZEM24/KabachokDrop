@@ -1,0 +1,13 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    ports:
+      - "80:8000"
+    volumes:
+      - ./backend/db.sqlite3:/app/db.sqlite3  
+    environment:
+      - DEBUG=0
+      - DJANGO_ALLOWED_HOSTS=localhost
+    command: gunicorn kabachok_backend.wsgi:application --bind 0.0.0.0:8000 --timeout 120 --workers 3

@@ -31,3 +31,7 @@ Thumbs.db
 
 # Docker
 *.tar.gz" > .gitignore
+
+backend/db.sqlite3
+backend/db.sqlite3.backup
+*.sqlite3

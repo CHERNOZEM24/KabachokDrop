@@ -35,7 +35,7 @@ class RegisterSerializer(serializers.ModelSerializer):
             email=validated_data.get('email', ''),
             password=validated_data['password']
         )
-        return user
+        return user 
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
